@@ -1,0 +1,40 @@
+trigger:
+  - main
+
+pool:
+  name: 'Deployment'
+
+variables:
+  imageName: 'paymentsimulation'
+  registryUrl: 'localhost:5000'
+  networkName: 's_app-network'
+
+stages:
+  - stage: BuildAndDeploy
+    jobs:
+      - job: Build
+        displayName: 'Build, Push and Run Payment'
+        steps:
+          - script: |
+              docker build -t $(registryUrl)/$(imageName):$(Build.BuildId) .
+              docker tag $(registryUrl)/$(imageName):$(Build.BuildId) $(registryUrl)/$(imageName):latest
+            displayName: 'Build Docker Image'
+
+          - script: |
+              docker push $(registryUrl)/$(imageName):$(Build.BuildId)
+              docker push $(registryUrl)/$(imageName):latest
+            displayName: 'Push to Registry'
+
+          - script: |
+              # Alten Container stoppen & entfernen (falls vorhanden)
+              docker stop paymentsimulation || true
+              docker rm paymentsimulation || true
+
+              # Neuen Container starten
+              # Wir stecken ihn ins selbe Netzwerk (--network) wie die Haupt-App
+              docker run -d \
+                --name paymentsimulation \
+                --network $(networkName) \
+                --restart unless-stopped \
+                $(registryUrl)/$(imageName):latest
+            displayName: 'Deploy Payment Container'
