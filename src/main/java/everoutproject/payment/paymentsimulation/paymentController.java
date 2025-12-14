@@ -14,7 +14,6 @@ import java.util.Map;
 public class paymentController {
     @PostMapping("/api/payment")
     public ResponseEntity<?> processPayment(@RequestBody PaymentRequest request) {
-        // 80% success rate, 20% failure rate
         if (Math.random() < 0.8) {
             return ResponseEntity.ok(Map.of("status", "success", "message", "Payment successful"));
         } else {
